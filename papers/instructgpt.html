@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('hd-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.setAttribute('data-theme',t);d.className+=' hd-js'})()</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>InstructGPT on one page: the paper behind ChatGPT, explained | Hitesh Dua</title>
+<meta name="description" content="How roughly 40 people ranking answers taught GPT-3 to help: the three steps (SFT, a reward model, PPO), both equations, and the results. Part 2 of AI papers, pictured.">
+<link rel="canonical" href="https://hiteshdua.com/papers/instructgpt">
+<meta name="author" content="Hitesh Dua">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#08090a" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="preload" href="/assets/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/site.css?v=ab0dbf3c17">
+<link rel="modulepreload" href="/assets/hairline.js">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Hitesh Dua">
+<meta property="og:title" content="InstructGPT, on one page">
+<meta property="og:description" content="How roughly 40 people ranking answers taught GPT-3 to help: the three steps (SFT, a reward model, PPO), both equations, and the results. Part 2 of AI papers, pictured.">
+<meta property="og:url" content="https://hiteshdua.com/papers/instructgpt">
+<meta property="og:image" content="https://hiteshdua.com/assets/og-instructgpt.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="InstructGPT, on one page">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="article:published_time" content="2026-10-25">
+<style>
+/* Layout: one phone-first column of inked index cards on dotted paper, like the reel's pages; the three steps
+     carry the reel's colours (SFT green, RM purple, PPO amber) and the paper's two equations sit in tinted wells. */
+  :root {
+    --paper: #F2F4F7; --sheet: #FFFFFF; --ink: #1A2030; --ink2: #4C566A; --mute: #6F7A8E; --hair: #CDD4DE; --dot: #D3D9E1;
+    --look: #D9401F; --green: #1BAF7A; --green-ink: #0E7A53; --purple: #6250D6; --purple-ink: #5241C4;
+    --amber: #E8A422; --amber-ink: #9A6604; --well-p: #F1EFFC; --well-a: #FDF6E6; --shadow: #1A2030; --on-block: #FFFFFF;
+    --display: "Recursive", ui-rounded, system-ui, sans-serif;
+    --body: "Recursive", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --serif: "Tinos", "Times New Roman", Times, serif;
+    --mathf: math, "STIX Two Math", "Cambria Math", "Latin Modern Math", "Tinos", serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #12161F; --sheet: #1A2030; --ink: #E8ECF2; --ink2: #B6BFCC; --mute: #8D97A9; --hair: #2E3647; --dot: #222939;
+      --look: #F0623F; --green: #22B985; --green-ink: #45D19F; --purple: #6E5DE0; --purple-ink: #A497FF;
+      --amber: #E3A12A; --amber-ink: #F0BD5C; --well-p: #242244; --well-a: #2C2616; --shadow: #05070B; --on-block: #FFFFFF;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #12161F; --sheet: #1A2030; --ink: #E8ECF2; --ink2: #B6BFCC; --mute: #8D97A9; --hair: #2E3647; --dot: #222939;
+    --look: #F0623F; --green: #22B985; --green-ink: #45D19F; --purple: #6E5DE0; --purple-ink: #A497FF;
+    --amber: #E3A12A; --amber-ink: #F0BD5C; --well-p: #242244; --well-a: #2C2616; --shadow: #05070B; --on-block: #FFFFFF;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    background-image: radial-gradient(var(--dot) 1.4px, transparent 1.6px);
+    background-size: 26px 26px;
+    color: var(--ink);
+    font-family: var(--body);
+    font-variation-settings: "CASL" 0.5, "MONO" 0;
+    font-size: 17px; line-height: 1.55;
+  }
+  .ig-page { padding: 12px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px)); }
+  .wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+  .wrap > header { display: flex; flex-direction: column; gap: 6px; padding-bottom: 6px; }
+  .eyebrow { font-size: 12.5px; font-weight: 720; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute);
+    font-variation-settings: "CASL" 0, "MONO" 1; }
+  .wrap h1 { margin: 0; font-family: var(--display); font-size: clamp(36px, 9vw, 56px); line-height: 1.02; font-weight: 900;
+    letter-spacing: -0.01em; font-variation-settings: "CASL" 1, "MONO" 0; text-wrap: balance; }
+  .sub { margin: 4px 0 0; font-size: clamp(18px, 4.4vw, 22px); font-weight: 760; color: var(--look); line-height: 1.3;
+    font-variation-settings: "CASL" 1, "MONO" 0; text-wrap: balance; }
+  .cite { margin: 2px 0 0; font-size: 13.5px; color: var(--mute); font-variation-settings: "CASL" 0, "MONO" 1; }
+  .cite a { color: inherit; text-underline-offset: 3px; }
+  .cite a:focus-visible, .foot a:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; border-radius: 4px; }
+
+  .card { background: var(--sheet); border: 2px solid var(--ink); border-radius: 18px; padding: 18px 20px 20px;
+    box-shadow: 0 7px 0 var(--shadow); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .card h2 { margin: 0; font-size: 12.5px; font-weight: 720; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute);
+    font-variation-settings: "CASL" 0, "MONO" 1; }
+  .card p { margin: 0; color: var(--ink2); }
+  .card b, .card strong { color: var(--ink); font-weight: 760; }
+
+  .step-head { display: grid; grid-template-columns: 72px 1fr; gap: 14px; align-items: center; }
+  .block { width: 72px; height: 72px; border-radius: 14px; border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--shadow);
+    display: grid; place-items: center; position: relative; color: var(--on-block); font-family: var(--display);
+    font-weight: 900; font-size: 24px; font-variation-settings: "CASL" 1, "MONO" 0; }
+  .block small { position: absolute; top: 4px; left: 8px; font-size: 12px; font-weight: 800; opacity: 0.85;
+    font-variation-settings: "CASL" 0, "MONO" 1; }
+  .block.sft { background: var(--green); } .block.rm { background: var(--purple); } .block.ppo { background: var(--amber); }
+  .step-head h3 { margin: 0; font-family: var(--display); font-size: clamp(22px, 5.4vw, 28px); line-height: 1.15; font-weight: 900;
+    font-variation-settings: "CASL" 1, "MONO" 0; text-wrap: balance; }
+  .step-head .tag { display: block; margin-top: 2px; font-size: 13px; color: var(--mute); font-variation-settings: "CASL" 0, "MONO" 1; }
+
+  .well { border-radius: 12px; padding: 14px 10px; overflow-x: auto; }
+  .well.p { background: var(--well-p); } .well.a { background: var(--well-a); }
+  .well math { font-family: var(--mathf); font-size: clamp(17px, 4.3vw, 22px); color: var(--ink); }
+  .well .lbl { display: block; margin: 0 6px 6px; font-size: 12px; font-weight: 720; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--mute); font-variation-settings: "CASL" 0, "MONO" 1; }
+  .m-p { color: var(--purple-ink); } .m-w { color: var(--look); } .m-g { color: var(--green-ink); } .m-a { color: var(--amber-ink); }
+  .m-s { color: var(--mute); }
+  .eq-wide, .eq-narrow { display: flex; flex-direction: column; gap: 4px; }
+  .eq-narrow { display: none; }
+  @media (max-width: 600px) { .eq-wide { display: none; } .eq-narrow { display: flex; } }
+
+  .notes { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+  .notes li { display: grid; grid-template-columns: 28px 1fr; gap: 8px; color: var(--ink2); }
+  .notes .sym { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--amber-ink); text-align: center; }
+
+  .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; }
+  @media (max-width: 520px) { .stats { grid-template-columns: minmax(0, 1fr); } }
+  .stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .stat .big { font-family: var(--display); font-weight: 900; font-size: clamp(30px, 7vw, 40px); line-height: 1.05;
+    font-variation-settings: "CASL" 1, "MONO" 0; font-variant-numeric: tabular-nums; }
+  .stat p { font-size: 15.5px; }
+  .c-look { color: var(--look); } .c-green { color: var(--green-ink); } .c-purple { color: var(--purple-ink); } .c-amber { color: var(--amber-ink); }
+
+  .foot { display: flex; flex-direction: column; gap: 10px; color: var(--ink2); font-size: 15.5px; padding: 4px 2px 0; }
+  .foot p { margin: 0; }
+  .foot .sign { font-size: 13.5px; color: var(--mute); font-variation-settings: "CASL" 0, "MONO" 1; }
+  .foot a { color: inherit; text-underline-offset: 3px; }
+</style>
+<style>
+/* The Hairline look for this page, laid over its own styles: a white canvas (near-black in dark), Geist, cards drawn by their shadow alone,
+   quiet headings. The three steps keep their colours (SFT green, the reward model purple, PPO amber), because the
+   equations are coloured to match them. */
+:root {
+  --paper: #ffffff; --sheet: #ffffff; --ink: #0a0a0a; --ink2: #525252; --mute: #737373; --hair: #e7e7e7; --dot: transparent;
+  --look: #b4321a; --shadow: transparent;
+  --display: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+}
+/* dark: the same look on the site's near-black; the steps and equations keep the colours the page's own dark set
+   gives them */
+:root[data-theme="dark"] {
+  --paper: #08090a; --sheet: #0e0f11; --ink: #ededef; --ink2: #b4b5bb; --mute: #8e8f96; --hair: #26272b; --dot: transparent;
+  --shadow: transparent;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #08090a; --sheet: #0e0f11; --ink: #ededef; --ink2: #b4b5bb; --mute: #8e8f96; --hair: #26272b; --dot: transparent;
+    --shadow: transparent;
+  }
+}
+body { background-image: none; font-size: 16px; line-height: 1.6; }
+.ig-page { padding: 12px var(--hd-gutter) 0; }
+.wrap { gap: 12px; }
+.wrap > header { gap: 8px; padding-bottom: 14px; }
+.eyebrow { font: 400 11.5px/1.4 var(--hd-mono); letter-spacing: 0.06em; color: var(--hd-muted); }
+.wrap h1 { font-weight: 500; font-size: clamp(32px, 6vw, 46px); line-height: 1.06; letter-spacing: -0.035em; }
+.sub { font-weight: 400; color: var(--ink2); font-size: clamp(17px, 2.4vw, 20px); letter-spacing: -0.01em; }
+.cite { font-family: var(--hd-mono); font-size: 12.5px; }
+.cite a, .foot a { color: var(--ink); text-decoration-color: var(--hd-faint); }
+
+.card { border: 0; border-radius: 12px; box-shadow: var(--hd-card); padding: 18px 20px 20px; }
+.card h2 { font: 400 11.5px/1.4 var(--hd-mono); letter-spacing: 0.06em; }
+.card b, .card strong { font-weight: 600; }
+.block { border: 0; border-radius: 12px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent); font-weight: 600; }
+.block small { font-family: var(--hd-mono); font-weight: 500; }
+.step-head h3 { font-weight: 500; letter-spacing: -0.02em; }
+.step-head .tag { font-family: var(--hd-mono); }
+.well .lbl { font: 400 11px/1.4 var(--hd-mono); letter-spacing: 0.06em; }
+.stat .big { font-weight: 500; letter-spacing: -0.03em; }
+.stat p { color: var(--hd-muted); }
+.foot { color: var(--ink2); }
+.foot b { font-weight: 600; }
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"InstructGPT on one page: the paper behind ChatGPT, explained","description":"How roughly 40 people ranking answers taught GPT-3 to help: the three steps (SFT, a reward model, PPO), both equations, and the results. Part 2 of AI papers, pictured.","url":"https://hiteshdua.com/papers/instructgpt","datePublished":"2026-10-25","image":"https://hiteshdua.com/assets/og-instructgpt.png","author":{"@type":"Person","name":"Hitesh Dua","url":"https://hiteshdua.com/"},"isPartOf":{"@type":"CreativeWorkSeries","name":"AI papers, pictured","url":"https://hiteshdua.com/papers/"},"about":{"@type":"ScholarlyArticle","name":"Training language models to follow instructions with human feedback","url":"https://arxiv.org/abs/2203.02155","datePublished":"2022"}}</script>
+</head>
+<body class="hd-paperpage" style="--hd-col:calc(720px + 2 * var(--hd-gutter))">
+<a class="hd-skip hd-chrome" href="#main">Skip to content</a>
+<header class="hd-chrome hd-top">
+  <a class="hd-name" href="/">Hitesh Dua</a>
+  <nav aria-label="Site">
+    <a class="hd-link" href="/papers/">Papers</a>
+    <a class="hd-link" href="/#tools">Tools</a>
+    <a class="hd-link" href="https://www.instagram.com/pragmaticcoder.ai/" rel="me">Instagram</a>
+    <button class="hd-theme" type="button" aria-label="Dark theme" aria-pressed="false" title="Switch to dark">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+        <mask id="hd-cut"><rect width="24" height="24" fill="#fff"/><circle class="hd-cut" cx="14.3" cy="9.8" r="4.4" fill="#000"/></mask>
+        <circle class="hd-orb" cx="12" cy="12" r="4.5" fill="currentColor" mask="url(#hd-cut)"/>
+        <path class="hd-rays" d="M12 2.75v1.9M12 19.35v1.9M2.75 12h1.9M19.35 12h1.9M5.46 5.46l1.34 1.34M17.2 17.2l1.34 1.34M5.46 18.54l1.34-1.34M17.2 6.8l1.34-1.34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </nav>
+</header>
+<main class="ig-page" id="main">
+<div class="wrap">
+  <header>
+    <span class="eyebrow">AI papers, pictured · Part 2 · cheat sheet</span>
+    <h1>InstructGPT on one page</h1>
+    <p class="sub">How roughly 40 people ranking answers taught GPT-3 to help</p>
+    <p class="cite">Ouyang et al., OpenAI, 2022 ·
+      <a href="https://arxiv.org/abs/2203.02155" target="_blank" rel="noopener">arXiv:2203.02155</a> ·
+      “Training language models to follow instructions with human feedback”</p>
+  </header>
+
+  <section class="card" aria-labelledby="h-problem">
+    <h2 id="h-problem">The problem</h2>
+    <p>GPT-3 is trained to <b>predict the next word</b>, so it continues your prompt instead of doing what you asked.
+      The paper calls this <b>misaligned</b>, and a bigger model doesn’t fix it.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-sft">
+    <div class="step-head">
+      <div class="block sft" aria-hidden="true"><small>1</small>SFT</div>
+      <h3 id="h-sft">Copy good examples<span class="tag">supervised fine-tuning</span></h3>
+    </div>
+    <p>Labelers write ideal answers to prompts (about <b>13k</b> of them), and GPT-3 is fine-tuned to imitate them.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-rm">
+    <div class="step-head">
+      <div class="block rm" aria-hidden="true"><small>2</small>RM</div>
+      <h3 id="h-rm">Learn a judge<span class="tag">the reward model</span></h3>
+    </div>
+    <p>The model writes <b>K = 4 to 9</b> answers to a prompt and a labeler ranks them, best to worst (<b>33k</b> prompts).
+      Every pair is a lesson: K choose 2, up to <b>36</b> per ranking. A 6B model learns to score answers.</p>
+    <div class="well p" role="group" aria-label="Equation 1, the reward model's loss">
+      <span class="lbl">The paper, equation 1</span>
+      <div class="eq-wide"><math display="block"><mrow><mi>loss</mi><mo stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo><mo>=</mo><mo>−</mo><mfrac><mn>1</mn><mrow><mo>(</mo><mfrac linethickness="0"><mi>K</mi><mn>2</mn></mfrac><mo>)</mo></mrow></mfrac><mi>E</mi><mo stretchy="false">[</mo><mi>log</mi><mspace width="0.22em"/><mi class="m-p">σ</mi><mo class="m-p" stretchy="false">(</mo><msub><mi class="m-p">r</mi><mi class="m-p">θ</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo>,</mo><msub><mi>y</mi><mi class="m-w">w</mi></msub><mo stretchy="false">)</mo><mo>−</mo><msub><mi class="m-p">r</mi><mi class="m-p">θ</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo>,</mo><msub><mi>y</mi><mi>l</mi></msub><mo stretchy="false">)</mo><mo class="m-p" stretchy="false">)</mo><mo stretchy="false">]</mo></mrow></math></div>
+      <div class="eq-narrow"><math display="block"><mrow><mi>loss</mi><mo stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo><mo>=</mo><mo>−</mo><mfrac><mn>1</mn><mrow><mo>(</mo><mfrac linethickness="0"><mi>K</mi><mn>2</mn></mfrac><mo>)</mo></mrow></mfrac><mi>E</mi><mo stretchy="false">[</mo><mi>log</mi><mspace width="0.22em"/><mi class="m-p">σ</mi><mo class="m-p" stretchy="false">(</mo><msub><mi class="m-p">r</mi><mi class="m-p">θ</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo>,</mo><msub><mi>y</mi><mi class="m-w">w</mi></msub><mo stretchy="false">)</mo></mrow></math>
+      <math display="block"><mrow><mo>−</mo><msub><mi class="m-p">r</mi><mi class="m-p">θ</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo>,</mo><msub><mi>y</mi><mi>l</mi></msub><mo stretchy="false">)</mo><mo class="m-p" stretchy="false">)</mo><mo stretchy="false">]</mo></mrow></math></div>
+    </div>
+    <p>In words: score the <b>winner</b> (y<sub>w</sub>) above the <b>loser</b> (y<sub>l</sub>). σ turns the score gap into
+      the chance a person would agree.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-ppo">
+    <div class="step-head">
+      <div class="block ppo" aria-hidden="true"><small>3</small>PPO</div>
+      <h3 id="h-ppo">Practice against the judge<span class="tag">reinforcement learning</span></h3>
+    </div>
+    <p>Reinforcement learning (PPO) on <b>31k</b> prompts: write an answer, get a score from the reward model, adjust.
+      The objective adds two guard rails:</p>
+    <div class="well a" role="group" aria-label="Equation 2, the reinforcement learning objective">
+      <span class="lbl">The paper, equation 2</span>
+      <div class="eq-wide"><math display="block"><mrow><mi>objective</mi><mo stretchy="false">(</mo><mi>φ</mi><mo stretchy="false">)</mo><mo>=</mo><mi>E</mi><mo stretchy="false">[</mo><msub><mi class="m-p">r</mi><mi class="m-p">θ</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false">)</mo><mo>−</mo><mi class="m-a">β</mi><mi>log</mi><mspace width="0.22em"/><mrow><mo>(</mo><mfrac><mrow><msubsup><mi class="m-g">π</mi><mi class="m-g">φ</mi><mtext class="m-g">RL</mtext></msubsup><mo stretchy="false">(</mo><mi>y</mi><mo>|</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mrow><msup><mi class="m-s">π</mi><mtext class="m-s">SFT</mtext></msup><mo stretchy="false">(</mo><mi>y</mi><mo>|</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></mfrac><mo>)</mo></mrow><mo stretchy="false">]</mo></mrow></math>
+      <math display="block"><mrow><mo>+</mo><mi class="m-a">γ</mi><mi>E</mi><mo stretchy="false">[</mo><mi>log</mi><mspace width="0.22em"/><msubsup><mi class="m-g">π</mi><mi class="m-g">φ</mi><mtext class="m-g">RL</mtext></msubsup><mo stretchy="false">(</mo><msub><mi>x</mi><mtext>pretrain</mtext></msub><mo stretchy="false">)</mo><mo stretchy="false">]</mo></mrow></math></div>
+      <div class="eq-narrow"><math display="block"><mrow><mi>objective</mi><mo stretchy="false">(</mo><mi>φ</mi><mo stretchy="false">)</mo><mo>=</mo><mi>E</mi><mo stretchy="false">[</mo><msub><mi class="m-p">r</mi><mi class="m-p">θ</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo>,</mo><mi>y</mi><mo stretchy="false">)</mo></mrow></math>
+      <math display="block"><mrow><mo>−</mo><mi class="m-a">β</mi><mi>log</mi><mspace width="0.22em"/><mrow><mo>(</mo><mfrac><mrow><msubsup><mi class="m-g">π</mi><mi class="m-g">φ</mi><mtext class="m-g">RL</mtext></msubsup><mo stretchy="false">(</mo><mi>y</mi><mo>|</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mrow><msup><mi class="m-s">π</mi><mtext class="m-s">SFT</mtext></msup><mo stretchy="false">(</mo><mi>y</mi><mo>|</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></mfrac><mo>)</mo></mrow><mo stretchy="false">]</mo></mrow></math>
+      <math display="block"><mrow><mo>+</mo><mi class="m-a">γ</mi><mi>E</mi><mo stretchy="false">[</mo><mi>log</mi><mspace width="0.22em"/><msubsup><mi class="m-g">π</mi><mi class="m-g">φ</mi><mtext class="m-g">RL</mtext></msubsup><mo stretchy="false">(</mo><msub><mi>x</mi><mtext>pretrain</mtext></msub><mo stretchy="false">)</mo><mo stretchy="false">]</mo></mrow></math></div>
+    </div>
+    <ul class="notes">
+      <li><span class="sym" aria-label="beta">β</span><span><b>The leash</b> (a KL penalty): stay close to the step-1 model, so it
+        can’t game the judge. The paper calls that gaming <b>over-optimization</b>.</span></li>
+      <li><span class="sym" aria-label="gamma">γ</span><span><b>Keep practicing on the original internet text.</b> That’s
+        <b>PPO-ptx</b>, the final InstructGPT: it wins back most of the “alignment tax” on old skills
+        (SQuAD, DROP, HellaSwag, WMT French→English).</span></li>
+    </ul>
+  </section>
+
+  <section class="card" aria-labelledby="h-got">
+    <h2 id="h-got">What it got</h2>
+    <div class="stats">
+      <div class="stat"><span class="big c-look">85%</span>
+        <p>of the time, people preferred InstructGPT 175B over GPT-3 175B (give or take 3%)</p></div>
+      <div class="stat"><span class="big c-green">1.3B &gt; 175B</span>
+        <p>the small InstructGPT beat GPT-3, a model over 100× bigger</p></div>
+      <div class="stat"><span class="big c-purple">21% vs 41%</span>
+        <p>how often it made things up vs GPT-3, on closed-domain tasks</p></div>
+      <div class="stat"><span class="big c-amber">&lt; 2%</span>
+        <p>extra compute: 4.9 + 60 vs GPT-3’s 3,640 petaflop/s-days</p></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p><b>Not perfect:</b> it still plays along with false premises. Ask “Why is it important to eat socks after
+      meditating?” and it explains.</p>
+    <p><b>What came next:</b> nine months later ChatGPT launched, trained “using the same methods as InstructGPT”
+      (<a href="https://openai.com/index/chatgpt/" target="_blank" rel="noopener">OpenAI</a>).</p>
+  </footer>
+</div>
+</main>
+<aside class="hd-chrome hd-wrap hd-series" aria-label="About this series">
+  <section class="hd-card" aria-labelledby="hd-part-h">
+    <p class="hd-label">AI papers, pictured</p>
+    <h2 class="hd-card-h" id="hd-part-h">Part 2 of the series</h2>
+    <p class="hd-card-p">The research papers behind modern AI, one at a time, simplified into pictures. New parts land on
+      Instagram first.</p>
+    <div class="hd-actions">
+      <a class="hd-btn is-primary" href="https://www.instagram.com/pragmaticcoder.ai/" rel="me">Follow on Instagram</a>
+      <a class="hd-btn" href="https://arxiv.org/abs/2203.02155">Read the original paper</a>
+    </div>
+  </section>
+  <nav class="hd-pager" aria-label="More parts">
+    <a href="/papers/attention-is-all-you-need"><span class="hd-label">Previous</span><b>Part 1: Attention Is All You Need</b></a>
+    <p>Part 3 is coming. <a href="https://www.instagram.com/pragmaticcoder.ai/" rel="me">Follow @pragmaticcoder.ai</a> so you don’t miss it.</p>
+  </nav>
+</aside>
+<footer class="hd-chrome hd-wrap"><div class="hd-foot">
+  <p>© 2026 Hitesh Dua</p>
+  <nav aria-label="Footer"><a href="/papers/">Papers</a><a href="/#tools">Tools</a><a href="https://www.instagram.com/pragmaticcoder.ai/" rel="me">Instagram</a></nav>
+</div></footer>
+<script type="module" src="/assets/site.js?v=6c9a8e691f704444bb9d"></script>
+</body>
+</html>
