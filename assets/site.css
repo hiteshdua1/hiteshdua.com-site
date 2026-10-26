@@ -1,0 +1,283 @@
+/* hiteshdua.com, on the Hairline design system (github.com/lucasmarkes/hairline).
+   Black and white: a white canvas (near-black in dark), chroma-free greys, cards drawn by their shadow alone, one serif
+   word in a title, mono only for small labels, and isometric line figures that answer the pointer. Every class starts
+   with hd- so the paper pages' own CSS never collides with it. */
+
+/* ---------- fonts: Geist, Geist Mono, Instrument Serif (all SIL Open Font License) ---------- */
+@font-face { font-family: "Geist"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url(/assets/geist-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Geist"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url(/assets/geist-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Geist Mono"; font-style: normal; font-weight: 100 900; font-display: swap;
+  src: url(/assets/geist-mono-latin.woff2) format("woff2"); }
+@font-face { font-family: "Instrument Serif"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url(/assets/instrument-serif-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Instrument Serif"; font-style: normal; font-weight: 400; font-display: swap;
+  src: url(/assets/instrument-serif-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Instrument Serif"; font-style: italic; font-weight: 400; font-display: swap;
+  src: url(/assets/instrument-serif-latin-italic.woff2) format("woff2"); }
+
+/* ---------- tokens: light, and a dark set that follows the visitor's system setting until they flip the switch ---------- */
+:root {
+  --hd-canvas: #ffffff; --hd-surface: #ffffff; --hd-ring: #f4f4f4; --hd-ink: #0a0a0a; --hd-ink-2: #404040;
+  --hd-muted: #737373; --hd-faint: #a3a3a3; --hd-line: rgba(0, 0, 0, 0.07); --hd-ghost: #c9c9c9;
+  /* a card drawn by its shadow alone: a hairline ring, then two soft drops */
+  --hd-card: 0 0 0 1px #0000000f, 0 1px 2px -1px #0000000f, 0 2px 4px 0 #0000000a;
+  --hd-lift: 0 1px 2px #00000008, 0 10px 28px -16px #00000024;
+  --hd-hover: inset 0 0 0 1px #ebebeb, 0 1px 2px #00000008, 0 12px 28px -18px #0000002b;
+  /* the light that follows the pointer across a card, and the dots under the hero field */
+  --hd-glow: rgba(0, 0, 0, 0.045); --hd-dot: rgba(0, 0, 0, 0.16);
+  --hd-ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --hd-gutter: clamp(18px, 5vw, 28px);
+  --hd-col: 1080px;
+  --hd-sans: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --hd-mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --hd-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  /* the figures' plates take the colour of what they sit on: the page here, a card's surface inside a card */
+  --hairline-plate: var(--hd-canvas);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --hd-canvas: #08090a; --hd-surface: #0e0f11; --hd-ring: #ffffff12; --hd-ink: #ededef; --hd-ink-2: #c4c5ca;
+    --hd-muted: #8e8f96; --hd-faint: #66676d; --hd-line: rgba(255, 255, 255, 0.08); --hd-ghost: #3d3e44;
+    --hd-card: 0 0 0 1px #ffffff14, inset 0 1px 0 #ffffff0a, 0 2px 8px #00000080;
+    --hd-lift: 0 1px 2px #00000099, 0 12px 32px -14px #000000;
+    --hd-hover: inset 0 0 0 1px #ffffff2e, inset 0 1px 0 #ffffff0d, 0 1px 2px #00000099, 0 16px 40px -16px #000000;
+    --hd-glow: rgba(255, 255, 255, 0.075); --hd-dot: rgba(255, 255, 255, 0.15);
+    --hairline-hi: #eef1f6; --hairline-edge: #6c6e76; --hairline-mid: #46464d; --hairline-lo: #2b2b30;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --hd-canvas: #08090a; --hd-surface: #0e0f11; --hd-ring: #ffffff12; --hd-ink: #ededef; --hd-ink-2: #c4c5ca;
+  --hd-muted: #8e8f96; --hd-faint: #66676d; --hd-line: rgba(255, 255, 255, 0.08); --hd-ghost: #3d3e44;
+  --hd-card: 0 0 0 1px #ffffff14, inset 0 1px 0 #ffffff0a, 0 2px 8px #00000080;
+  --hd-lift: 0 1px 2px #00000099, 0 12px 32px -14px #000000;
+  --hd-hover: inset 0 0 0 1px #ffffff2e, inset 0 1px 0 #ffffff0d, 0 1px 2px #00000099, 0 16px 40px -16px #000000;
+  --hd-glow: rgba(255, 255, 255, 0.075); --hd-dot: rgba(255, 255, 255, 0.15);
+  /* the figures' lines a touch brighter than Hairline's own dark set, so they read on a phone outdoors */
+  --hairline-hi: #eef1f6; --hairline-edge: #6c6e76; --hairline-mid: #46464d; --hairline-lo: #2b2b30;
+  color-scheme: dark;
+}
+
+/* ---------- base ---------- */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+body.hd { min-height: 100vh; background: var(--hd-canvas); color: var(--hd-ink); font: 400 15px/1.6 var(--hd-sans);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body.hd *, body.hd *::before, body.hd *::after, .hd-chrome, .hd-chrome *, .hd-chrome *::before, .hd-chrome *::after { box-sizing: border-box; }
+/* resets with no specificity, so every class below sets its own spacing */
+:where(body.hd) :where(p, h1, h2, h3, ol, ul, dl, dd, figure) { margin: 0; }
+.hd-chrome { font-family: var(--hd-sans); font-weight: 400; color: var(--hd-ink); -webkit-font-smoothing: antialiased; }
+:where(.hd-chrome) :where(p, h2, h3) { margin: 0; }
+:is(body.hd, .hd-chrome) :is(a, button):focus-visible { outline: 1.5px solid var(--hd-ink); outline-offset: 2px; border-radius: 6px; }
+.hd-skip { position: absolute; left: 12px; top: -60px; z-index: 40; padding: 9px 12px; border-radius: 9px; background: var(--hd-ink);
+  color: var(--hd-canvas); font: 500 14px/1 var(--hd-sans); text-decoration: none; }
+.hd-skip:focus { top: 9px; }
+.hd-wrap { width: 100%; max-width: var(--hd-col); margin-inline: auto; padding-inline: var(--hd-gutter); }
+
+/* ---------- top bar: the name, and muted 13px links ---------- */
+.hd-top { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; height: 54px;
+  padding: 0 max(var(--hd-gutter), calc((100% - var(--hd-col)) / 2 + var(--hd-gutter)));
+  background: color-mix(in srgb, var(--hd-canvas) 82%, transparent); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.hd-chrome .hd-name { position: relative; font-size: 14px; font-weight: 500; line-height: 1; letter-spacing: -0.01em; color: var(--hd-ink); text-decoration: none; }
+.hd-name::after { content: ""; position: absolute; inset: -12px -6px; }
+.hd-top nav { display: flex; margin-right: -10px; }
+.hd-chrome .hd-link { position: relative; display: inline-flex; align-items: center; height: 30px; padding: 0 10px; border-radius: 8px;
+  font-size: 13px; line-height: 1; color: var(--hd-muted); text-decoration: none; }
+.hd-link::after { content: ""; position: absolute; inset: -5px 0; }
+.hd-chrome .hd-link[aria-current="page"] { color: var(--hd-ink); }
+@media (hover: hover) { .hd-chrome .hd-link:hover { color: var(--hd-ink); } }
+@media (max-width: 359px) { .hd-chrome .hd-link { padding: 0 7px; } .hd-top nav { margin-right: -7px; } }
+
+/* the light/dark switch: a sun whose core grows and is cut into a crescent while its rays fold away. The head script
+   shows it; without script the page follows the system setting and there is nothing to switch. */
+.hd-theme { display: none; }
+.hd-js .hd-chrome .hd-theme { position: relative; display: inline-grid; place-items: center; width: 32px; height: 30px; margin-left: 2px;
+  padding: 0; border: 0; border-radius: 8px; background: none; color: var(--hd-muted); font: inherit; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; }
+.hd-theme::after { content: ""; position: absolute; inset: -7px -2px; }
+@media (hover: hover) { .hd-chrome .hd-theme:hover { color: var(--hd-ink); } }
+.hd-theme svg { display: block; overflow: visible; transition: scale 160ms var(--hd-ease); }
+.hd-theme:active svg { scale: 0.86; }
+.hd-orb, .hd-rays, .hd-cut { transform-origin: 12px 12px; transition: transform 640ms cubic-bezier(0.34, 1.45, 0.64, 1), opacity 260ms ease; }
+.hd-cut { transform: translate(9px, -9px); }
+:root[data-theme="dark"] .hd-orb { transform: scale(1.55); }
+:root[data-theme="dark"] .hd-cut { transform: none; }
+:root[data-theme="dark"] .hd-rays { transform: rotate(-70deg) scale(0.3); opacity: 0; }
+/* the new theme opens out of the switch (site.js animates the circle); nothing else fades */
+::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+
+/* ---------- type ---------- */
+.hd-label { font: 400 11.5px/1.4 var(--hd-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--hd-muted); }
+.hd-title { max-width: 19ch; font-size: clamp(30px, 4.6vw, 42px); font-weight: 500; line-height: 1.1; letter-spacing: -0.03em; text-wrap: balance; }
+:is(.hd-title, .hd-h2, .hd-card-h) em { font-family: var(--hd-serif); font-style: italic; font-size: 1.1em; font-weight: 400; letter-spacing: -0.01em; }
+.hd-sub { max-width: 46ch; font-size: 15.5px; line-height: 1.6; color: var(--hd-muted); text-wrap: pretty; }
+.hd-h2 { font-size: clamp(24px, 3.2vw, 34px); font-weight: 500; line-height: 1.15; letter-spacing: -0.03em; text-wrap: balance; }
+.hd-lede { max-width: 58ch; color: var(--hd-muted); text-wrap: pretty; }
+.hd-more { color: var(--hd-ink); text-decoration: underline; text-decoration-color: var(--hd-faint); text-underline-offset: 4px; }
+@media (hover: hover) { .hd-more:hover { text-decoration-color: currentColor; } }
+
+/* ---------- buttons ---------- */
+.hd-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+.hd-chrome .hd-btn, body.hd .hd-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px;
+  padding: 0 14px; border-radius: 9px; background: var(--hd-surface); color: var(--hd-ink); box-shadow: inset 0 0 0 1px var(--hd-ring), var(--hd-lift);
+  font: 500 14px/1 var(--hd-sans); text-decoration: none; white-space: nowrap; cursor: pointer; transition: transform 160ms var(--hd-ease); }
+.hd-chrome .hd-btn.is-primary, body.hd .hd-btn.is-primary { background: var(--hd-ink); color: var(--hd-canvas); box-shadow: var(--hd-lift); }
+.hd-btn:active { transform: scale(0.96); }
+
+/* ---------- hero: one column, each block rises out of a blur, one after another ---------- */
+.hd-hero { display: grid; justify-items: center; padding-top: clamp(48px, 9vw, 88px); text-align: center; }
+.hd-hero .hd-title { margin-top: 14px; }
+.hd-hero .hd-sub { margin-top: 14px; }
+.hd-hero .hd-actions { justify-content: center; }
+.hd-art { width: 100%; max-width: 520px; margin-top: 18px; }
+/* the figures draw in the middle of their 5:4 box: let the next section start where the drawing ends */
+.hd-hero .hd-art { margin-bottom: clamp(-80px, -9vw, -36px); }
+.hd-rise > * { animation: hd-fade 750ms var(--hd-ease) both, hd-unblur 560ms var(--hd-ease) both, hd-up 380ms var(--hd-ease) both;
+  animation-delay: calc(var(--i, 0) * 70ms + 60ms); }
+@keyframes hd-unblur { from { filter: blur(6px); } to { filter: none; } }
+@keyframes hd-up { from { transform: translateY(12px); } to { transform: none; } }
+@keyframes hd-fade { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---------- sections ---------- */
+.hd-sec { padding-top: clamp(64px, 10vw, 104px); scroll-margin-top: 54px; }
+.hd-sec-head { display: grid; gap: 10px; max-width: 640px; }
+
+/* the series: a card per part, its name and what it explains, its figure small at the right */
+.hd-rows { display: grid; gap: 10px; margin-top: 26px; padding: 0; list-style: none; }
+.hd-chrome .hd-row, body.hd .hd-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px; align-items: center; gap: 16px;
+  padding: 12px 12px 12px 18px; border-radius: 12px; background: var(--hd-surface); box-shadow: var(--hd-card); color: var(--hd-ink); text-decoration: none;
+  transition: box-shadow 180ms ease, translate 260ms var(--hd-ease); --hairline-plate: var(--hd-surface); }
+@media (hover: hover) { a.hd-row:hover { box-shadow: var(--hd-hover); translate: 0 -2px; } }
+.hd-row-name { display: block; margin-top: 8px; font-size: 16px; font-weight: 500; line-height: 1.35; letter-spacing: -0.01em; text-wrap: balance; }
+.hd-row-text { display: block; margin-top: 4px; font-size: 14px; line-height: 1.55; color: var(--hd-muted); text-wrap: pretty; }
+.hd-row-meta { display: block; margin-top: 10px; font-family: var(--hd-serif); font-style: italic; font-size: 15px; line-height: 1.3; color: var(--hd-muted); }
+.hd-row-fig { display: block; width: 100%; border-radius: 10px; box-shadow: inset 0 0 0 1px var(--hd-ring); overflow: hidden; }
+.hd-row.is-planned .hd-row-name { color: var(--hd-muted); }
+.hd-row.is-planned { box-shadow: inset 0 0 0 1px var(--hd-ring); }
+.hd-ghost { display: block; width: 100%; height: auto; }
+.hd-ghost path { fill: none; stroke: var(--hd-ghost); stroke-width: 0.9; stroke-linejoin: round; }
+.hd-ghost .dash { stroke-dasharray: 3 4; }
+@media (max-width: 520px) { .hd-chrome .hd-row, body.hd .hd-row { grid-template-columns: minmax(0, 1fr) 104px; gap: 12px; padding-left: 14px; } }
+
+/* tiles: a figure live on its stage, its name under it (the about row and the series) */
+.hd-tiles { display: grid; gap: 14px; margin-top: 28px; padding: 0; list-style: none; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+@media (min-width: 900px) { .hd-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.hd-tiles > li { min-width: 0; }
+body.hd .hd-tilecard { display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 14px; background: var(--hd-surface); --hairline-plate: var(--hd-surface);
+  box-shadow: inset 0 0 0 1px var(--hd-ring), var(--hd-lift); color: var(--hd-ink); text-decoration: none; transition: box-shadow 180ms ease, translate 260ms var(--hd-ease); }
+@media (hover: hover) { body.hd a.hd-tilecard:hover { box-shadow: var(--hd-hover); translate: 0 -3px; } }
+.hd-tilestage { display: block; }
+.hd-tilestage .hd-ghost { aspect-ratio: 5 / 4; padding: 16% 22%; }
+.hd-tilefoot { display: grid; align-content: start; gap: 4px; flex: 1; padding: 14px 16px 16px; border-top: 1px solid var(--hd-line); }
+.hd-tilefoot .hd-label { margin-bottom: 2px; }
+.hd-tilename { font-size: 15.5px; font-weight: 500; line-height: 1.35; letter-spacing: -0.01em; text-wrap: balance; }
+.hd-tiletext { font-size: 13.5px; line-height: 1.5; color: var(--hd-muted); text-wrap: pretty; }
+body.hd .hd-tilecard.is-planned { box-shadow: inset 0 0 0 1px var(--hd-ring); }
+.hd-tilecard.is-planned .hd-tilename { color: var(--hd-muted); }
+/* phones: a row you swipe, the next tile peeking in, so the figures stay big and the page stays short */
+@media (max-width: 640px) {
+  .hd-tiles { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 84%; gap: 12px;
+    margin: 24px calc(-1 * var(--hd-gutter)) -26px; padding: 4px var(--hd-gutter) 26px;
+    overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-padding-inline: var(--hd-gutter);
+    scrollbar-width: none; }
+  .hd-tiles::-webkit-scrollbar { display: none; }
+  .hd-tiles > li { scroll-snap-align: start; }
+}
+
+/* the stack: one small card per tool */
+.hd-stack { display: grid; gap: 10px; margin-top: 26px; padding: 0; list-style: none; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 760px) { .hd-stack { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+body.hd .hd-stackitem { display: grid; align-content: start; gap: 3px; height: 100%; padding: 14px 16px 15px; border-radius: 12px; background: var(--hd-surface); box-shadow: var(--hd-card);
+  color: var(--hd-ink); text-decoration: none; transition: box-shadow 180ms ease, transform 160ms var(--hd-ease), translate 260ms var(--hd-ease); }
+@media (hover: hover) { body.hd .hd-stackitem:hover { box-shadow: var(--hd-hover); translate: 0 -2px; } }
+.hd-stackitem:active { transform: scale(0.98); }
+body.hd .hd-stackitem { position: relative; }
+.hd-stackitem .hd-tilename { padding-right: 20px; }
+.hd-arrow { position: absolute; top: 15px; right: 14px; color: var(--hd-faint); transition: color 180ms ease, translate 260ms var(--hd-ease); }
+@media (hover: hover) { .hd-stackitem:hover .hd-arrow { color: var(--hd-ink); translate: 2px -2px; } }
+.hd-card { border-radius: 12px; background: var(--hd-surface); box-shadow: var(--hd-card); }
+.hd-note { margin-top: 14px; font-size: 13px; color: var(--hd-muted); }
+
+/* say hi: a card, the words left, a dish that turns to the pointer right */
+.hd-hi { display: grid; gap: 8px; align-items: center; padding: 28px 24px 8px; border-radius: 18px; background: var(--hd-surface); box-shadow: var(--hd-card); --hairline-plate: var(--hd-surface); }
+@media (min-width: 760px) { .hd-hi { grid-template-columns: minmax(0, 1fr) minmax(0, 340px); gap: 32px; padding: 36px 44px; } }
+.hd-hi .hd-fig { width: 100%; max-width: 340px; justify-self: center; margin-block: -28px; }
+.hd-hi .hd-lede { margin-top: 12px; }
+.hd-h2.is-lg { font-size: clamp(32px, 4.6vw, 52px); line-height: 1.04; letter-spacing: -0.035em; }
+
+/* home hero: bigger type, and a field of pillars under it, pulled up under the words so its rising pillars fill the
+   space below the buttons; the words and buttons stay on top, so the field never takes a click from them */
+.hd-hero.is-home { position: relative; z-index: 2; padding-top: clamp(56px, 10vw, 112px); }
+.hd-title.is-xl { max-width: 14ch; font-size: clamp(44px, 8vw, 96px); line-height: 0.98; letter-spacing: -0.045em; }
+.hd-title.is-xl em { font-size: 1.06em; letter-spacing: -0.02em; }
+.hd-hero.is-home .hd-sub { margin-top: 22px; max-width: 50ch; font-size: clamp(15.5px, 1.6vw, 17.5px); }
+.hd-stage { position: relative; z-index: 1; width: 100%; max-width: 1040px; margin: -13% auto -15%; padding-inline: var(--hd-gutter); }
+/* the field stands on a floor of dots that fades out from its middle; the field's plates cover the dots under it */
+.hd-stage::before { content: ""; position: absolute; z-index: -1; inset: 6% 0 10%; pointer-events: none;
+  background: radial-gradient(circle, var(--hd-dot) 0 1px, transparent 1.5px) center / 22px 22px;
+  -webkit-mask-image: radial-gradient(closest-side, #000 35%, transparent); mask-image: radial-gradient(closest-side, #000 35%, transparent); }
+/* phones: the field runs wider than the screen's gutters, so it reads as big as it does on a desk */
+@media (max-width: 640px) {
+  .hd-stage { margin: -17% auto -12%; padding-inline: 0; overflow-x: clip; }
+  .hd-stage > div { width: 126%; margin-left: -13%; }
+}
+
+/* ---------- under every paper page ---------- */
+.hd-series { display: grid; gap: 12px; padding-top: 56px; }
+.hd-series > * { width: 100%; max-width: 640px; }
+.hd-series .hd-card { padding: 20px 20px 22px; }
+.hd-card-h { margin-top: 8px; font-size: 18px; font-weight: 500; line-height: 1.3; letter-spacing: -0.015em; }
+.hd-card-p { margin-top: 6px; font-size: 14.5px; line-height: 1.6; color: var(--hd-muted); text-wrap: pretty; }
+.hd-series .hd-actions { margin-top: 18px; }
+.hd-pager { display: grid; gap: 10px; margin-top: 4px; }
+@media (min-width: 620px) { .hd-pager { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.hd-chrome .hd-pager a { display: grid; gap: 6px; padding: 14px 16px; border-radius: 12px; background: var(--hd-surface); box-shadow: var(--hd-card);
+  color: var(--hd-ink); text-decoration: none; transition: box-shadow 180ms ease, translate 260ms var(--hd-ease); }
+@media (hover: hover) { .hd-chrome .hd-pager a:hover { box-shadow: var(--hd-hover); translate: 0 -2px; } }
+.hd-pager b { font-size: 14.5px; font-weight: 500; line-height: 1.35; }
+.hd-pager p { padding: 14px 16px; border-radius: 12px; box-shadow: inset 0 0 0 1px var(--hd-ring); font-size: 14px; line-height: 1.55; color: var(--hd-muted); }
+.hd-chrome .hd-pager p a { display: inline; padding: 0; border-radius: 0; background: none; box-shadow: none; color: var(--hd-ink);
+  text-decoration: underline; text-decoration-color: var(--hd-faint); text-underline-offset: 4px; }
+
+/* ---------- footer ---------- */
+.hd-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 20px; margin-top: clamp(72px, 11vw, 112px);
+  padding-block: 20px 44px; border-top: 1px solid var(--hd-line); font-size: 13px; line-height: 1.5; color: var(--hd-muted); }
+.hd-foot nav { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+.hd-chrome .hd-foot a { position: relative; color: var(--hd-muted); text-decoration: underline; text-decoration-color: transparent;
+  text-underline-offset: 4px; transition: text-decoration-color 150ms ease, color 150ms ease; }
+.hd-foot a::after { content: ""; position: absolute; inset: -12px -8px; }
+@media (hover: hover) { .hd-chrome .hd-foot a:hover { color: var(--hd-ink); text-decoration-color: currentColor; } }
+
+/* ---------- the figures: drawn by hairline.js into a 5:4 box sized before they mount, so nothing shifts ---------- */
+.hd-fig { display: block; width: 100%; aspect-ratio: 5 / 4; }
+
+/* ---------- a soft light follows the pointer across a card (site.js sets where, on devices with a mouse) ---------- */
+:is(.hd-tilecard, .hd-row, .hd-hi, .hd-pager a) { position: relative; }
+@media (hover: hover) and (pointer: fine) {
+  :is(.hd-tilecard, .hd-stackitem, .hd-row, .hd-hi, .hd-pager a)::after { content: ""; position: absolute; inset: 0; z-index: 1;
+    border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity 280ms ease;
+    background: radial-gradient(340px circle at var(--hd-mx, 50%) var(--hd-my, 50%), var(--hd-glow), transparent 68%); }
+  :is(.hd-tilecard, .hd-stackitem, .hd-row, .hd-hi, .hd-pager a):hover::after { opacity: 1; }
+}
+
+/* ---------- blocks rise out of a blur as they scroll into view, like the hero (only when script can show them) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .hd-js .hd-reveal { opacity: 0; translate: 0 18px; filter: blur(8px);
+    transition: opacity 800ms var(--hd-ease), translate 800ms var(--hd-ease), filter 700ms var(--hd-ease);
+    transition-delay: calc(var(--d, 0) * 80ms); }
+  .hd-js .hd-reveal.is-in { opacity: 1; translate: none; filter: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hd-rise > * { animation: hd-fade 400ms ease both; }
+  .hd-btn, .hd-row, .hd-pager a, .hd-tilecard, .hd-stackitem, .hd-foot a, .hd-orb, .hd-rays, .hd-cut, .hd-arrow { transition: none; }
+}
+@media print { .hd-top, .hd-series, .hd-foot, .hd-skip { display: none !important; } .hd-reveal { opacity: 1 !important; translate: none !important; filter: none !important; } }
