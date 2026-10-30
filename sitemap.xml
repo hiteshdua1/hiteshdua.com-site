@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://hiteshdua.com/</loc><lastmod>2026-10-26</lastmod></url>
-  <url><loc>https://hiteshdua.com/papers/</loc><lastmod>2026-10-25</lastmod></url>
+  <url><loc>https://hiteshdua.com/</loc><lastmod>2026-10-30</lastmod></url>
+  <url><loc>https://hiteshdua.com/papers/</loc><lastmod>2026-10-30</lastmod></url>
   <url><loc>https://hiteshdua.com/papers/attention-is-all-you-need</loc><lastmod>2026-10-24</lastmod></url>
   <url><loc>https://hiteshdua.com/papers/instructgpt</loc><lastmod>2026-10-25</lastmod></url>
+  <url><loc>https://hiteshdua.com/papers/rag</loc><lastmod>2026-10-30</lastmod></url>
 </urlset>
