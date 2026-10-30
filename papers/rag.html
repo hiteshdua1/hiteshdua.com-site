@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<script>(function(){var d=document.documentElement,t;try{t=localStorage.getItem('hd-theme')}catch(e){}if(t!=='light'&&t!=='dark')t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';d.setAttribute('data-theme',t);d.className+=' hd-js'})()</script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RAG on one page: how AI learned to look things up, explained | Hitesh Dua</title>
+<meta name="description" content="How a retriever and a writer learned to answer from Wikipedia: the three steps (retrieve, augment, generate), the paper&#39;s equations, and the results. Part 3 of AI papers, pictured.">
+<link rel="canonical" href="https://hiteshdua.com/papers/rag">
+<meta name="author" content="Hitesh Dua">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#08090a" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/assets/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+<link rel="preload" href="/assets/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/site.css?v=ab0dbf3c17">
+<link rel="modulepreload" href="/assets/hairline.js">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Hitesh Dua">
+<meta property="og:title" content="RAG, on one page">
+<meta property="og:description" content="How a retriever and a writer learned to answer from Wikipedia: the three steps (retrieve, augment, generate), the paper&#39;s equations, and the results. Part 3 of AI papers, pictured.">
+<meta property="og:url" content="https://hiteshdua.com/papers/rag">
+<meta property="og:image" content="https://hiteshdua.com/assets/og-rag.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="RAG, on one page">
+<meta name="twitter:card" content="summary_large_image">
+<meta property="article:published_time" content="2026-10-30">
+<style>
+/* Layout: one phone-first column of inked index cards on dotted paper, like the reel's pages; the steps carry the
+   reel's colours (the retriever amber, the library's cards green, the generator blue) and the paper's equations sit
+   in tinted wells. Every selector is scoped under .rag-page. */
+.rag-page {
+  --paper: #F2F4F7; --sheet: #FFFFFF; --ink: #1A2030; --ink2: #4C566A; --mute: #6F7A8E; --hair: #CDD4DE; --dot: #D3D9E1;
+  --look: #D9401F; --amber: #E8A422; --amber-ink: #9A6604; --green: #1BAF7A; --green-ink: #0E7A53;
+  --blue: #2A6FDB; --blue-ink: #1A4FA6; --well-a: #FDF6E6; --well-b: #EAF1FC; --quote: #F7F8FA;
+  --shadow: #1A2030; --on-block: #FFFFFF;
+  --display: "Recursive", ui-rounded, system-ui, sans-serif;
+  --body: "Recursive", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Tinos", "Times New Roman", Times, serif;
+  --mathf: math, "STIX Two Math", "Cambria Math", "Latin Modern Math", "Tinos", serif;
+  background: var(--paper);
+  background-image: radial-gradient(var(--dot) 1.4px, transparent 1.6px);
+  background-size: 26px 26px;
+  color: var(--ink);
+  font-family: var(--body);
+  font-variation-settings: "CASL" 0.5, "MONO" 0;
+  font-size: 17px; line-height: 1.55;
+  padding: 12px max(16px, env(safe-area-inset-right, 0px)) 48px max(16px, env(safe-area-inset-left, 0px));
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rag-page {
+    --paper: #12161F; --sheet: #1A2030; --ink: #E8ECF2; --ink2: #B6BFCC; --mute: #8D97A9; --hair: #2E3647; --dot: #222939;
+    --look: #F0623F; --amber: #E3A12A; --amber-ink: #F0BD5C; --green: #22B985; --green-ink: #45D19F;
+    --blue: #3D7FE6; --blue-ink: #8DB6FF; --well-a: #2C2616; --well-b: #182640; --quote: #20283A;
+    --shadow: #05070B; --on-block: #FFFFFF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] .rag-page {
+  --paper: #12161F; --sheet: #1A2030; --ink: #E8ECF2; --ink2: #B6BFCC; --mute: #8D97A9; --hair: #2E3647; --dot: #222939;
+  --look: #F0623F; --amber: #E3A12A; --amber-ink: #F0BD5C; --green: #22B985; --green-ink: #45D19F;
+  --blue: #3D7FE6; --blue-ink: #8DB6FF; --well-a: #2C2616; --well-b: #182640; --quote: #20283A;
+  --shadow: #05070B; --on-block: #FFFFFF;
+  color-scheme: dark;
+}
+.rag-page * { box-sizing: border-box; }
+.rag-page .wrap { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.rag-page .wrap > header { display: flex; flex-direction: column; gap: 6px; padding-bottom: 6px; }
+.rag-page .eyebrow { font-size: 12.5px; font-weight: 720; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute);
+  font-variation-settings: "CASL" 0, "MONO" 1; }
+.rag-page h1 { margin: 0; font-family: var(--display); font-size: clamp(36px, 9vw, 56px); line-height: 1.02; font-weight: 900;
+  letter-spacing: -0.01em; font-variation-settings: "CASL" 1, "MONO" 0; text-wrap: balance; }
+.rag-page .sub { margin: 4px 0 0; font-size: clamp(18px, 4.4vw, 22px); font-weight: 760; color: var(--look); line-height: 1.3;
+  font-variation-settings: "CASL" 1, "MONO" 0; text-wrap: balance; }
+.rag-page .cite { margin: 2px 0 0; font-size: 13.5px; color: var(--mute); font-variation-settings: "CASL" 0, "MONO" 1; }
+.rag-page .cite a { color: inherit; text-underline-offset: 3px; }
+.rag-page a:focus-visible { outline: 3px solid var(--look); outline-offset: 2px; border-radius: 4px; }
+
+.rag-page .card { background: var(--sheet); border: 2px solid var(--ink); border-radius: 18px; padding: 18px 20px 20px;
+  box-shadow: 0 7px 0 var(--shadow); display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.rag-page .card h2 { margin: 0; font-size: 12.5px; font-weight: 720; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mute);
+  font-variation-settings: "CASL" 0, "MONO" 1; }
+.rag-page .card p { margin: 0; color: var(--ink2); }
+.rag-page .card b, .rag-page .card strong { color: var(--ink); font-weight: 760; }
+
+.rag-page .quote { background: var(--quote); border-radius: 12px; padding: 12px 14px; font-family: var(--serif); font-size: 18px;
+  color: var(--ink); display: flex; flex-direction: column; gap: 4px; }
+.rag-page .quote .q-label, .rag-page .quote .q-note { font-family: var(--body); font-size: 12.5px; color: var(--mute);
+  font-variation-settings: "CASL" 0, "MONO" 1; }
+.rag-page .quote .q-label { letter-spacing: 0.08em; text-transform: uppercase; }
+
+.rag-page .step-head { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 14px; align-items: center; }
+.rag-page .block { width: 72px; height: 72px; border-radius: 14px; border: 2px solid var(--ink); box-shadow: 0 4px 0 var(--shadow);
+  display: grid; place-items: center; position: relative; color: var(--on-block); font-family: var(--display);
+  font-weight: 900; font-size: 28px; font-variation-settings: "CASL" 1, "MONO" 0; }
+.rag-page .block small { position: absolute; top: 4px; left: 8px; font-size: 12px; font-weight: 800; opacity: 0.85;
+  font-variation-settings: "CASL" 0, "MONO" 1; }
+.rag-page .block.lib { background: var(--sheet); color: var(--green); }
+.rag-page .block.r { background: var(--amber); } .rag-page .block.aug { background: var(--green); } .rag-page .block.g { background: var(--blue); }
+.rag-page .step-head h3 { margin: 0; font-family: var(--display); font-size: clamp(22px, 5.4vw, 28px); line-height: 1.15; font-weight: 900;
+  font-variation-settings: "CASL" 1, "MONO" 0; text-wrap: balance; }
+.rag-page .step-head .tag { display: block; margin-top: 2px; font-size: 13px; color: var(--mute); font-variation-settings: "CASL" 0, "MONO" 1; }
+
+.rag-page .well { border-radius: 12px; padding: 14px 10px; overflow-x: auto; display: flex; flex-direction: column; gap: 4px; }
+.rag-page .well.a { background: var(--well-a); } .rag-page .well.b { background: var(--well-b); }
+.rag-page .well math { font-family: var(--mathf); font-size: clamp(16px, 4.2vw, 22px); color: var(--ink); }
+.rag-page .well .lbl { display: block; margin: 0 6px 6px; font-size: 12px; font-weight: 720; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--mute); font-variation-settings: "CASL" 0, "MONO" 1; }
+.rag-page .well .lbl-gap { margin-top: 12px; }
+.rag-page .eq-wide, .rag-page .eq-narrow { display: flex; flex-direction: column; gap: 4px; }
+.rag-page .eq-narrow { display: none; }
+@media (max-width: 600px) { .rag-page .eq-wide { display: none; } .rag-page .eq-narrow { display: flex; } }
+.rag-page .m-a { color: var(--amber-ink); } .rag-page .m-g { color: var(--green-ink); } .rag-page .m-b { color: var(--blue-ink); }
+.rag-page .m-w { color: var(--look); }
+
+.rag-page .notes { display: flex; flex-direction: column; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.rag-page .notes li { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; color: var(--ink2); }
+.rag-page .notes .sym { font-family: var(--serif); font-size: 24px; line-height: 1.1; color: var(--look); text-align: center; }
+
+.rag-page .stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 20px; }
+@media (max-width: 520px) { .rag-page .stats { grid-template-columns: minmax(0, 1fr); } }
+.rag-page .stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rag-page .stat .big { font-family: var(--display); font-weight: 900; font-size: clamp(28px, 7vw, 38px); line-height: 1.05;
+  font-variation-settings: "CASL" 1, "MONO" 0; font-variant-numeric: tabular-nums; }
+.rag-page .stat p { font-size: 15.5px; }
+.rag-page .c-look { color: var(--look); } .rag-page .c-amber { color: var(--amber-ink); } .rag-page .c-green { color: var(--green-ink); } .rag-page .c-blue { color: var(--blue-ink); }
+
+.rag-page .foot { display: flex; flex-direction: column; gap: 10px; color: var(--ink2); font-size: 15.5px; padding: 4px 2px 0; }
+.rag-page .foot p { margin: 0; }
+.rag-page .foot a { color: inherit; text-underline-offset: 3px; }
+</style>
+<style>
+/* The Hairline look for this page, laid over its own styles: a white canvas (near-black in dark), Geist, cards drawn by
+   their shadow alone, quiet headings. The steps keep their colours (the retriever amber, the cards green, the generator
+   blue), because the equations are coloured to match them. Scoped under .rag-page, like the page's own styles. */
+.rag-page {
+  --paper: #ffffff; --sheet: #ffffff; --ink: #0a0a0a; --ink2: #525252; --mute: #737373; --hair: #e7e7e7; --dot: transparent;
+  --look: #b4321a; --shadow: transparent; --quote: #f6f6f6;
+  --display: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --body: "Geist", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+  background: transparent; background-image: none; font-size: 16px; line-height: 1.6;
+  padding: 12px var(--hd-gutter, max(16px, env(safe-area-inset-right, 0px))) 0;
+}
+:root[data-theme="dark"] .rag-page {
+  --paper: #08090a; --sheet: #0e0f11; --ink: #ededef; --ink2: #b4b5bb; --mute: #8e8f96; --hair: #26272b; --dot: transparent;
+  --shadow: transparent; --quote: #16171a;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rag-page {
+    --paper: #08090a; --sheet: #0e0f11; --ink: #ededef; --ink2: #b4b5bb; --mute: #8e8f96; --hair: #26272b; --dot: transparent;
+    --shadow: transparent; --quote: #16171a;
+  }
+}
+.rag-page .wrap { gap: 12px; }
+.rag-page .wrap > header { gap: 8px; padding-bottom: 14px; }
+.rag-page .eyebrow { font: 400 11.5px/1.4 var(--hd-mono, ui-monospace, monospace); letter-spacing: 0.06em; color: var(--hd-muted, var(--mute)); }
+.rag-page h1 { font-weight: 500; font-size: clamp(32px, 6vw, 46px); line-height: 1.06; letter-spacing: -0.035em; }
+.rag-page .sub { font-weight: 400; color: var(--ink2); font-size: clamp(17px, 2.4vw, 20px); letter-spacing: -0.01em; }
+.rag-page .cite { font-family: var(--hd-mono, ui-monospace, monospace); font-size: 12.5px; }
+.rag-page .cite a, .rag-page .foot a { color: var(--ink); text-decoration-color: var(--hd-faint, var(--hair)); }
+
+.rag-page .card { border: 0; border-radius: 12px; box-shadow: var(--hd-card, 0 0 0 1px var(--hair)); padding: 18px 20px 20px; }
+.rag-page .card h2 { font: 400 11.5px/1.4 var(--hd-mono, ui-monospace, monospace); letter-spacing: 0.06em; }
+.rag-page .card b, .rag-page .card strong { font-weight: 600; }
+.rag-page .quote .q-label, .rag-page .quote .q-note { font-family: var(--hd-mono, ui-monospace, monospace); }
+.rag-page .block { border: 0; border-radius: 12px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 12%, transparent); font-weight: 600; }
+.rag-page .block.lib { box-shadow: inset 0 0 0 1px var(--hair); }
+.rag-page .block small { font-family: var(--hd-mono, ui-monospace, monospace); font-weight: 500; }
+.rag-page .step-head h3 { font-weight: 500; letter-spacing: -0.02em; }
+.rag-page .step-head .tag { font-family: var(--hd-mono, ui-monospace, monospace); }
+.rag-page .well .lbl { font: 400 11px/1.4 var(--hd-mono, ui-monospace, monospace); letter-spacing: 0.06em; }
+.rag-page .stat .big { font-weight: 500; letter-spacing: -0.03em; }
+.rag-page .stat p { color: var(--hd-muted, var(--mute)); }
+.rag-page .foot { color: var(--ink2); }
+.rag-page .foot b { font-weight: 600; }
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","headline":"RAG on one page: how AI learned to look things up, explained","description":"How a retriever and a writer learned to answer from Wikipedia: the three steps (retrieve, augment, generate), the paper's equations, and the results. Part 3 of AI papers, pictured.","url":"https://hiteshdua.com/papers/rag","datePublished":"2026-10-30","image":"https://hiteshdua.com/assets/og-rag.png","author":{"@type":"Person","name":"Hitesh Dua","url":"https://hiteshdua.com/"},"isPartOf":{"@type":"CreativeWorkSeries","name":"AI papers, pictured","url":"https://hiteshdua.com/papers/"},"about":{"@type":"ScholarlyArticle","name":"Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks","url":"https://arxiv.org/abs/2005.11401","datePublished":"2020"}}</script>
+</head>
+<body class="hd-paperpage" style="--hd-col:calc(720px + 2 * var(--hd-gutter))">
+<a class="hd-skip hd-chrome" href="#main">Skip to content</a>
+<header class="hd-chrome hd-top">
+  <a class="hd-name" href="/">Hitesh Dua</a>
+  <nav aria-label="Site">
+    <a class="hd-link" href="/papers/">Papers</a>
+    <a class="hd-link" href="/#tools">Tools</a>
+    <a class="hd-link" href="https://www.instagram.com/pragmaticcoder.ai/" rel="me">Instagram</a>
+    <button class="hd-theme" type="button" aria-label="Dark theme" aria-pressed="false" title="Switch to dark">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+        <mask id="hd-cut"><rect width="24" height="24" fill="#fff"/><circle class="hd-cut" cx="14.3" cy="9.8" r="4.4" fill="#000"/></mask>
+        <circle class="hd-orb" cx="12" cy="12" r="4.5" fill="currentColor" mask="url(#hd-cut)"/>
+        <path class="hd-rays" d="M12 2.75v1.9M12 19.35v1.9M2.75 12h1.9M19.35 12h1.9M5.46 5.46l1.34 1.34M17.2 17.2l1.34 1.34M5.46 18.54l1.34-1.34M17.2 6.8l1.34-1.34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+    </button>
+  </nav>
+</header>
+<main class="rag-page" id="main">
+<div class="wrap">
+  <header>
+    <span class="eyebrow">AI papers, pictured · Part 3 · cheat sheet</span>
+    <h1>RAG on one page</h1>
+    <p class="sub">How AI learned to look things up before it answers</p>
+    <p class="cite">Lewis et al., Facebook AI Research, UCL and NYU, May 2020 (NeurIPS 2020) ·
+      <a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener">arXiv:2005.11401</a> ·
+      “Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks”</p>
+  </header>
+
+  <section class="card" aria-labelledby="h-problem">
+    <h2 id="h-problem">The problem</h2>
+    <p>A model like BART keeps everything it learned <b>inside its weights</b> (the paper calls that <b>parametric
+      memory</b>). It answers closed-book: it can’t show a source, can’t learn new facts without retraining, and when
+      it’s unsure it makes things up. The paper’s word: <b>“hallucinations”</b>.</p>
+    <p class="quote"><span class="q-label">BART, asked to define the middle ear</span>“The middle ear is the part of the
+      ear between the middle ear and the nose.” <span class="q-note">(Table 3, marked factually incorrect)</span></p>
+  </section>
+
+  <section class="card" aria-labelledby="h-lib">
+    <div class="step-head">
+      <div class="block lib" aria-hidden="true"><svg viewBox="0 0 40 30" width="40" height="30" focusable="false"><rect x="2" y="2" width="36" height="26" rx="4" fill="#fff" stroke="currentColor" stroke-width="2.5"/><rect x="2" y="2" width="36" height="7" rx="3" fill="currentColor"/><path d="M8 16h24M8 22h16" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg></div>
+      <h3 id="h-lib">Build the library<span class="tag">non-parametric memory</span></h3>
+    </div>
+    <p>The December 2018 Wikipedia, cut into <b>100-word chunks</b>: <b>21 million</b> passages. Each one gets a list of
+      numbers, and they all go into one fast search index (FAISS). This memory is plain text, so people can
+      <b>read it and edit it</b>.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-r">
+    <div class="step-head">
+      <div class="block r" aria-hidden="true"><small>1</small>R</div>
+      <h3 id="h-r">Retrieve the right pages<span class="tag">the retriever (DPR)</span></h3>
+    </div>
+    <p>Your question becomes a list of numbers, <b>q(x)</b>; every passage already has one, <b>d(z)</b>. Multiply them
+      number by number and add it up: that’s the match score. A Maximum Inner Product Search (<b>MIPS</b>) grabs the
+      top-K passages (K = 5 or 10 in training).</p>
+    <div class="well a" role="group" aria-label="The retriever's equation, section 2.2">
+      <span class="lbl">The paper, section 2.2</span>
+      <math display="block"><mrow><msub><mi class="m-a">p</mi><mi class="m-a">η</mi></msub><mo stretchy="false">(</mo><mi>z</mi><mo>|</mo><mi>x</mi><mo stretchy="false">)</mo><mo>∝</mo><mi>exp</mi><mo stretchy="false">(</mo><msup><mrow><mi class="m-g">d</mi><mo class="m-g" stretchy="false">(</mo><mi class="m-g">z</mi><mo class="m-g" stretchy="false">)</mo></mrow><mo>⊤</mo></msup><mspace width="0.18em"/><mi class="m-a">q</mi><mo class="m-a" stretchy="false">(</mo><mi class="m-a">x</mi><mo class="m-a" stretchy="false">)</mo><mo stretchy="false">)</mo></mrow></math>
+      <math display="block"><mrow><mi class="m-g">d</mi><mo stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo><mo>=</mo><msub><mtext>BERT</mtext><mi>d</mi></msub><mo stretchy="false">(</mo><mi>z</mi><mo stretchy="false">)</mo><mo>,</mo><mspace width="0.6em"/><mi class="m-a">q</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><msub><mtext>BERT</mtext><mi>q</mi></msub><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math>
+    </div>
+    <p>In words: the passages whose numbers line up best with your question’s win.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-a">
+    <div class="step-head">
+      <div class="block aug" aria-hidden="true"><small>2</small>A</div>
+      <h3 id="h-a">Augment the question<span class="tag">add the passage to the input</span></h3>
+    </div>
+    <p>Each retrieved passage is simply <b>joined to your question</b> (concatenated), so the writer sees both.</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-g">
+    <div class="step-head">
+      <div class="block g" aria-hidden="true"><small>3</small>G</div>
+      <h3 id="h-g">Generate the answer<span class="tag">the generator (BART-large, 400M)</span></h3>
+    </div>
+    <p>The generator writes a draft from each passage, and the drafts are <b>blended by how much the retriever trusts
+      each passage</b>. Two ways to blend:</p>
+    <div class="well b" role="group" aria-label="RAG-Sequence and RAG-Token, section 2.1">
+      <span class="lbl">RAG-Sequence: one passage per answer</span>
+      <math display="block"><mrow><mi>p</mi><mo stretchy="false">(</mo><mi>y</mi><mo>|</mo><mi>x</mi><mo stretchy="false">)</mo><mo>≈</mo><munder><mo class="m-w">∑</mo><mrow><mi>z</mi><mo>∈</mo><mtext>top-</mtext><mi>k</mi></mrow></munder><msub><mi class="m-a">p</mi><mi class="m-a">η</mi></msub><mo class="m-a" stretchy="false">(</mo><mi class="m-a">z</mi><mo class="m-a">|</mo><mi class="m-a">x</mi><mo class="m-a" stretchy="false">)</mo><mspace width="0.18em"/><msub><mi class="m-b">p</mi><mi class="m-b">θ</mi></msub><mo class="m-b" stretchy="false">(</mo><mi class="m-b">y</mi><mo class="m-b">|</mo><mi class="m-b">x</mi><mo class="m-b">,</mo><mi class="m-b">z</mi><mo class="m-b" stretchy="false">)</mo></mrow></math>
+      <span class="lbl lbl-gap">RAG-Token: a passage per word</span>
+      <div class="eq-wide"><math display="block"><mrow><mi>p</mi><mo stretchy="false">(</mo><mi>y</mi><mo>|</mo><mi>x</mi><mo stretchy="false">)</mo><mo>≈</mo><munderover><mo class="m-w">∏</mo><mi>i</mi><mi>N</mi></munderover><munder><mo class="m-w">∑</mo><mrow><mi>z</mi><mo>∈</mo><mtext>top-</mtext><mi>k</mi></mrow></munder><msub><mi class="m-a">p</mi><mi class="m-a">η</mi></msub><mo class="m-a" stretchy="false">(</mo><mi class="m-a">z</mi><mo class="m-a">|</mo><mi class="m-a">x</mi><mo class="m-a" stretchy="false">)</mo><mspace width="0.18em"/><msub><mi class="m-b">p</mi><mi class="m-b">θ</mi></msub><mo class="m-b" stretchy="false">(</mo><msub><mi class="m-b">y</mi><mi class="m-b">i</mi></msub><mo class="m-b">|</mo><mi class="m-b">x</mi><mo class="m-b">,</mo><mi class="m-b">z</mi><mo class="m-b">,</mo><msub><mi class="m-b">y</mi><mrow><mn class="m-b">1</mn><mo class="m-b">:</mo><mi class="m-b">i</mi><mo class="m-b">−</mo><mn class="m-b">1</mn></mrow></msub><mo class="m-b" stretchy="false">)</mo></mrow></math></div><div class="eq-narrow"><math display="block"><mrow><mi>p</mi><mo stretchy="false">(</mo><mi>y</mi><mo>|</mo><mi>x</mi><mo stretchy="false">)</mo><mo>≈</mo><munderover><mo class="m-w">∏</mo><mi>i</mi><mi>N</mi></munderover><munder><mo class="m-w">∑</mo><mrow><mi>z</mi><mo>∈</mo><mtext>top-</mtext><mi>k</mi></mrow></munder><msub><mi class="m-a">p</mi><mi class="m-a">η</mi></msub><mo class="m-a" stretchy="false">(</mo><mi class="m-a">z</mi><mo class="m-a">|</mo><mi class="m-a">x</mi><mo class="m-a" stretchy="false">)</mo></mrow></math><math display="block"><mrow><mo>×</mo><mspace width="0.18em"/><msub><mi class="m-b">p</mi><mi class="m-b">θ</mi></msub><mo class="m-b" stretchy="false">(</mo><msub><mi class="m-b">y</mi><mi class="m-b">i</mi></msub><mo class="m-b">|</mo><mi class="m-b">x</mi><mo class="m-b">,</mo><mi class="m-b">z</mi><mo class="m-b">,</mo><msub><mi class="m-b">y</mi><mrow><mn class="m-b">1</mn><mo class="m-b">:</mo><mi class="m-b">i</mi><mo class="m-b">−</mo><mn class="m-b">1</mn></mrow></msub><mo class="m-b" stretchy="false">)</mo></mrow></math></div>
+    </div>
+    <ul class="notes">
+      <li><span class="sym" aria-label="sum">Σ</span><span><b>Blend the cards.</b> Each draft counts as much as the
+        retriever trusts its passage, p<sub>η</sub>(z | x).</span></li>
+      <li><span class="sym" aria-label="product">Π</span><span><b>For every word.</b> RAG-Token re-blends at each word,
+        so one answer can draw on several passages. Given “Hemingway”, one passage brought “The Sun Also Rises” and
+        another “A Farewell to Arms” (Figure 2).</span></li>
+    </ul>
+    <p><b>Trained end to end:</b> it only ever saw questions and answers. Nobody told it which passages were right; the
+      question side of the retriever and BART learned together (the passage index stays fixed).</p>
+  </section>
+
+  <section class="card" aria-labelledby="h-got">
+    <h2 id="h-got">What it got</h2>
+    <div class="stats">
+      <div class="stat"><span class="big c-look">44.5</span>
+        <p>exact match on Natural Questions (real Google searches), a new state of the art; T5-11B answering from memory: 34.5</p></div>
+      <div class="stat"><span class="big c-amber">626M vs 11B</span>
+        <p>trainable parameters: RAG vs T5-11B, about 17× fewer</p></div>
+      <div class="stat"><span class="big c-green">42.7% vs 7.1%</span>
+        <p>how often judges found RAG vs BART more factual, over 452 Jeopardy question pairs</p></div>
+      <div class="stat"><span class="big c-blue">70% · 68%</span>
+        <p>world leaders it got right after swapping in the 2016 or 2018 Wikipedia, with no retraining (12% and 4% with the wrong year’s)</p></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <p><b>Not perfect:</b> on some tasks, like story generation, the retriever “collapsed”: it fetched the same passages
+      for every input, and the writer learned to ignore them. And the library is only as true as its source; the
+      paper notes Wikipedia is never entirely factual or free of bias. In May 2024, Google’s AI Overviews, which look
+      things up across the web, told people to add glue to pizza sauce: the source was an 11-year-old Reddit joke.
+      Google then limited satire, humor and forum posts in answers like that
+      (<a href="https://blog.google/products-and-platforms/products/search/ai-overviews-update-may-2024/" target="_blank" rel="noopener">Google</a>).</p>
+    <p><b>What came next:</b> on Feb 7, 2023, Microsoft launched the new Bing, whose answers cite their sources
+      (<a href="https://blogs.microsoft.com/blog/2023/02/07/reinventing-search-with-a-new-ai-powered-microsoft-bing-and-edge-your-copilot-for-the-web/" target="_blank" rel="noopener">Microsoft</a>).
+      Look it up, then answer: most AI assistants with web search work this way today.</p>
+  </footer>
+</div>
+</main>
+<aside class="hd-chrome hd-wrap hd-series" aria-label="About this series">
+  <section class="hd-card" aria-labelledby="hd-part-h">
+    <p class="hd-label">AI papers, pictured</p>
+    <h2 class="hd-card-h" id="hd-part-h">Part 3 of the series</h2>
+    <p class="hd-card-p">The research papers behind modern AI, one at a time, simplified into pictures. New parts land on
+      Instagram first.</p>
+    <div class="hd-actions">
+      <a class="hd-btn is-primary" href="https://www.instagram.com/pragmaticcoder.ai/" rel="me">Follow on Instagram</a>
+      <a class="hd-btn" href="https://arxiv.org/abs/2005.11401">Read the original paper</a>
+    </div>
+  </section>
+  <nav class="hd-pager" aria-label="More parts">
+    <a href="/papers/instructgpt"><span class="hd-label">Previous</span><b>Part 2: InstructGPT</b></a>
+    <p>Next up, Part 4: how AI taught itself to use tools. <a href="https://www.instagram.com/pragmaticcoder.ai/" rel="me">Follow @pragmaticcoder.ai</a> so you don’t miss it.</p>
+  </nav>
+</aside>
+<footer class="hd-chrome hd-wrap"><div class="hd-foot">
+  <p>© 2026 Hitesh Dua</p>
+  <nav aria-label="Footer"><a href="/papers/">Papers</a><a href="/#tools">Tools</a><a href="https://www.instagram.com/pragmaticcoder.ai/" rel="me">Instagram</a></nav>
+</div></footer>
+<script type="module" src="/assets/site.js?v=6c9a8e691f704444bb9d"></script>
+</body>
+</html>
